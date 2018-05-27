@@ -50,6 +50,9 @@
 
 /* system header files */
 #include <stdio.h>
+
+#include "testUart.h"
+#include "XdkSensorHandle.h"
 /* additional interface header files */
 #include "BCDS_HAL.h"
 #include "FreeRTOS.h"
@@ -60,20 +63,178 @@
 #include "BCDS_CmdProcessor.h"
 #include "BCDS_Assert.h"
 #include "BSP_BoardShared.h"
+
+#include "simplelink.h"
+#include "BCDS_Basics.h"
+#include "BCDS_Assert.h"
+#include "BCDS_CmdProcessor.h"
+#include "BCDS_WlanConnect.h"
+#include "BCDS_NetworkConfig.h"
+#include "Serval_Types.h"
+#include "Serval_Ip.h"
+#include "FreeRTOS.h"
+#include "timers.h"
+
+#include "em_cmu.h"
+#include "em_adc.h"
+
+#include "BCDS_MCU_GPIO.h"
+#include "BCDS_MCU_GPIO_Handle.h"
+#include "BSP_BoardShared.h"
 CmdProcessor_T *AppCmdProcessorHandle;
 
 UART_T uartHandle;
-//
-//typedef void (*MCU_UART_Callback_T)(UART_T uart, struct MCU_UART_Event_S event);
-//Retcode_T MCU_UART_Initialize(UART_T uart, MCU_UART_Callback_T callback);
-//Retcode_T MCU_UART_Send(UART_T uart, uint8_t * data, uint32_t len);
-//Retcode_T MCU_UART_Receive(UART_T uart, uint8_t* buffer, uint32_t size);
-//Retcode_T MCU_UART_GetRxCount(UART_T uart, uint32_t* count);
-//
-//Retcode_T BSP_ExtensionPort_ConnectUart(void);
-//HWHandle_T BSP_ExtensionPort_GetUartHandle(void);
-//Retcode_T BSP_ExtensionPort_EnableUart(void);
-//Retcode_T BSP_ExtensionPort_SetUartConfig(BSP_ExtensionPortUartConfig_T configItem, uint32_t value, void * pvalue);
+xTimerHandle wifiSendTimerHandle = NULL;
+
+_i16 socketHandle=NULL;
+Ip_Address_T destAddr = SERVER_IP;
+SlSockAddrIn_t addr;
+
+
+
+#define TIMER_AUTORELOAD_ON pdTRUE
+
+#define ONESECONDDELAY      UINT32_C(1000)       /* one second is represented by this macro */
+#define TIMERBLOCKTIME      UINT32_C(0xffff)     /* Macro used to define blocktime of a timer */
+#define TIMEBASE            UINT32_C(0)          /* Macro used to define the Timebase for the ADC */
+#define ADCFREQUENCY        UINT32_C(9000000)    /* Macro Used to define the frequency of the ADC Clock */
+#define NUMBER_OF_CHANNELS  UINT32_C(2)
+
+/* local variables ********************************************************** */
+
+
+void extensionLedTask(void)
+{
+	MCU_GPIO_Handle_T GPIOA;
+	MCU_GPIO_Handle_T GPIOB;
+	MCU_GPIO_Handle_T GPIOC;
+    /* initialize local variables */
+    GPIOA.Port = gpioPortA;
+    GPIOA.Pin = 1;
+    GPIOA.Mode = gpioModePushPull;
+    GPIOA.InitialState = MCU_GPIO_PIN_STATE_LOW;
+
+    GPIOB.Port = gpioPortE;
+	GPIOB.Pin = 2;
+	GPIOB.Mode = gpioModePushPull;
+	GPIOB.InitialState = MCU_GPIO_PIN_STATE_LOW;
+
+	GPIOC.Port = gpioPortC;
+	GPIOC.Pin = 8;
+	GPIOC.Mode = gpioModePushPull;
+	GPIOC.InitialState = MCU_GPIO_PIN_STATE_LOW;
+
+    /* Initialization activities for PTD driver */
+    MCU_GPIO_Initialize(&GPIOA);
+    MCU_GPIO_Initialize(&GPIOB);
+    MCU_GPIO_Initialize(&GPIOC);
+    /* blinking functionality */
+    for (;;)
+	{
+    	int retcode;
+
+
+		retcode = MCU_GPIO_WritePin(&GPIOA,MCU_GPIO_PIN_STATE_LOW);
+		retcode = MCU_GPIO_WritePin(&GPIOB,MCU_GPIO_PIN_STATE_LOW);
+		retcode = MCU_GPIO_WritePin(&GPIOC,MCU_GPIO_PIN_STATE_LOW);
+		if(retcode!= RETCODE_OK){
+			printf("Write low failed!\n\r\n\r");
+		}
+		else{
+			printf("0.\n\r");
+		}
+
+		vTaskDelay (1000);
+		retcode = MCU_GPIO_WritePin(&GPIOA,MCU_GPIO_PIN_STATE_HIGH);
+		retcode = MCU_GPIO_WritePin(&GPIOB,MCU_GPIO_PIN_STATE_LOW);
+		retcode = MCU_GPIO_WritePin(&GPIOC,MCU_GPIO_PIN_STATE_LOW);
+		if(retcode!= RETCODE_OK){
+			printf("Write low failed!\n\r\n\r");
+		}
+		else{
+			printf("1.\n\r");
+		}
+
+		vTaskDelay (1000);
+		retcode = MCU_GPIO_WritePin(&GPIOA,MCU_GPIO_PIN_STATE_LOW);
+		retcode = MCU_GPIO_WritePin(&GPIOB,MCU_GPIO_PIN_STATE_HIGH);
+		retcode = MCU_GPIO_WritePin(&GPIOC,MCU_GPIO_PIN_STATE_LOW);
+		if(retcode!= RETCODE_OK){
+			printf("Write low failed!\n\r\n\r");
+		}
+		else{
+			printf("2.\n\r");
+		}
+
+		vTaskDelay (1000);
+		retcode = MCU_GPIO_WritePin(&GPIOA,MCU_GPIO_PIN_STATE_HIGH);
+		retcode = MCU_GPIO_WritePin(&GPIOB,MCU_GPIO_PIN_STATE_HIGH);
+		retcode = MCU_GPIO_WritePin(&GPIOC,MCU_GPIO_PIN_STATE_LOW);
+		if(retcode!= RETCODE_OK){
+			printf("Write low failed!\n\r\n\r");
+		}
+		else{
+			printf("3.\n\r");
+		}
+
+		vTaskDelay (1000);
+		retcode = MCU_GPIO_WritePin(&GPIOA,MCU_GPIO_PIN_STATE_LOW);
+		retcode = MCU_GPIO_WritePin(&GPIOB,MCU_GPIO_PIN_STATE_LOW);
+		retcode = MCU_GPIO_WritePin(&GPIOC,MCU_GPIO_PIN_STATE_HIGH);
+		if(retcode!= RETCODE_OK){
+			printf("Write low failed!\n\r\n\r");
+		}
+		else{
+			printf("4.\n\r");
+		}
+		vTaskDelay (6000);
+
+
+
+    }
+}
+
+
+
+void createNewGPIOTask(void)
+{
+  xTaskHandle taskHandle = NULL;
+  xTaskCreate(
+    extensionLedTask,                 // function that implements the task
+    (const char * const) "My Task", // a name for the task
+    configMINIMAL_STACK_SIZE,       // depth of the task stack
+    NULL,                           // parameters passed to the function
+    tskIDLE_PRIORITY,               // task priority
+    taskHandle                      // pointer to a task handle for late reference
+  );
+}
+
+
+
+xTimerHandle scanAdcTimerHandle;
+
+/**
+ * @brief Timer Callback; Scans and prints out the ADC Channels' Values
+ */
+static void scanAdc(xTimerHandle pxTimer)
+{
+    /* Initialize the Variables */
+    (void) (pxTimer);
+    uint32_t _adc0ChData = 0;
+    uint8_t _channelsScanned = 0;
+
+    /* Start the ADC Scan */
+    ADC_Start(ADC0, adcStartScan);
+
+    for (_channelsScanned = 0; _channelsScanned < NUMBER_OF_CHANNELS-1; _channelsScanned++) {
+        /* Wait for Valid Data */
+        while (!(ADC0->STATUS & ADC_STATUS_SCANDV));
+
+        /* Read the Scanned data */
+        _adc0ChData = 0xFFF & ADC_DataScanGet(ADC0);
+        printf("ADC Channel %ld = %ld\r\n", ((ADC0->STATUS & _ADC_STATUS_SCANDATASRC_MASK) >> _ADC_STATUS_SCANDATASRC_SHIFT), _adc0ChData);
+    }
+}
 
 
 MCU_UART_Callback_T uartCallback(UART_T uart, struct MCU_UART_Event_S event){
@@ -135,6 +296,228 @@ void initUART(){
 		printf("UART enabled correctly\r\n");
 	}
 }
+
+static void initUDP(void)
+{
+	printf("UDP init started  correctly\r\n");
+    Retcode_T retval = RETCODE_OK;
+    static_assert((portTICK_RATE_MS != 0), "Tick rate MS is zero");
+
+
+
+    /* create timer task to get and transmit accel data via BLE for every one second automatically*/
+
+    wifiSendTimerHandle = xTimerCreate((char * const ) "wifiUdpSend", 1000, TIMER_AUTORELOAD_ON, NULL, EnqueueDatatoWifi);
+    if (NULL != wifiSendTimerHandle)
+    {
+        retval = wifiConnect();
+
+        if(retval==RETCODE_OK){
+        	printf("wifi connect successful\r\n");
+        }
+        else{
+        	printf("wifi connect not successful\r\n");
+        }
+    }
+//    wifiTcpSend(null, 6666);
+    if ((RETCODE_OK != retval|| (NULL == wifiSendTimerHandle))) //
+    {
+        printf("Failed to initialize because of Wifi/Command Processor/Timer Create fail \r\n");
+        assert(false);
+    }
+    printf("UDP init done  correctly\r\n");
+}
+
+static void PrintDeviceIP(void)
+{
+    NetworkConfig_IpSettings_T myIpSettings;
+    Ip_Address_T* IpaddressHex = Ip_getMyIpAddr();
+    int32_t Result = INT32_C(-1);
+    char ipAddress[SERVAL_IP_ADDR_LEN] = { 0 };
+
+    memset(&myIpSettings, (uint32_t) ZERO, sizeof(myIpSettings));
+
+    Retcode_T ReturnValue = NetworkConfig_GetIpSettings(&myIpSettings);
+    if (ReturnValue == RETCODE_OK)
+    {
+        *IpaddressHex = Basics_htonl(myIpSettings.ipV4);
+        Result = Ip_convertAddrToString(IpaddressHex, ipAddress);
+        if (Result < INT32_C(0))
+        {
+            printf("Couldn't convert the IP address to string format \r\n ");
+        }
+        printf(" Ip address of the device %s \r\n ", ipAddress);
+    }
+    else
+    {
+        printf("Error in getting IP settings\n\r");
+    }
+}
+
+static void wifiUdpSend(void * param1, uint32_t port)
+{
+    BCDS_UNUSED(param1);
+    static uint16_t counter = UINT16_C(0);
+    SlSockAddrIn_t Addr;
+    uint16_t AddrSize = (uint16_t) ZERO;
+    int16_t SockID = (int16_t) 6000;
+    int16_t Status = (int16_t) ZERO;
+
+    /* copies the dummy data to send array , the first array element is the running counter to track the number of packets send so far*/
+
+    Addr.sin_family = SL_AF_INET;
+    Addr.sin_port = sl_Htons((uint16_t) SERVER_PORT);
+    Addr.sin_addr.s_addr = sl_Htonl(SERVER_IP);
+    AddrSize = sizeof(SlSockAddrIn_t);
+
+    SockID = sl_Socket(SL_AF_INET, SL_SOCK_DGRAM, (uint32_t) ZERO); /**<The return value is a positive number if successful; other wise negative*/
+    if (SockID < (int16_t) ZERO)
+    {
+        printf("Error in socket opening\n");
+        /* error case*/
+        return;
+    }
+    char outBuf[1024];
+	sprintf(outBuf, "Test UDP send\r\n");
+
+	Status = sl_SendTo(SockID, (const void *) outBuf, strlen(outBuf), (uint32_t) ZERO, (SlSockAddr_t *) &Addr, AddrSize);/**<The return value is a number of characters sent;negative if not successful*/
+
+//	Status = sl_SendTo(SockID, bsdBuffer_mau, BUFFER_SIZE * sizeof(uint16_t), (uint32_t) ZERO, (SlSockAddr_t *) &Addr, AddrSize);/**<The return value is a number of characters sent;negative if not successful*/
+	/*Check if 0 transmitted bytes sent or error condition*/
+    if (Status <= (int16_t) ZERO)
+    {
+        Status = sl_Close(SockID);
+        if (Status < 0)
+        {
+            printf("Error is closing socket after failing to send the Udp data \r\n");
+            return;
+        }
+        printf("Error in sending data \r\n");
+        return;
+    }
+    Status = sl_Close(SockID);
+    if (Status < 0)
+    {
+        printf("Error in closing socket after sending successfully sending the udp data \r\n");
+        return;
+    }
+    counter++;
+    printf("UDP sending successful\r\n");
+    return;
+}
+
+static void EnqueueDatatoWifi(void *pvParameters)
+{
+    BCDS_UNUSED(pvParameters);
+
+    Retcode_T retVal = CmdProcessor_Enqueue(AppCmdProcessorHandle, wifiUdpSend, NULL, SERVER_PORT);
+    if (RETCODE_OK != retVal)
+    {
+    	if(RETCODE_FAILURE ==retVal)
+    		printf("Queue is full \r\n");
+        printf("Failed to Enqueue SendAccelDataoverWifi to Application Command Processor \r\n");
+    }
+}
+
+static void WlanEventCallback(WlanConnect_Status_T Event)
+{
+    switch (Event)
+    {
+    case WLAN_CONNECTED:
+        /* start accelerometer data transmission timer */
+        if (pdTRUE != xTimerStart(wifiSendTimerHandle, (WIFI_TX_FREQ/portTICK_RATE_MS)))
+        {
+            /* Assertion Reason : Failed to start software timer. Check command queue size of software timer service*/
+            assert(false);
+        }
+        printf("XDK Device Connected over WIFI \r\n");
+        PrintDeviceIP();
+        break;
+    case WLAN_DISCONNECTED:
+        /* stop Ble timer accelerometer data transmission timer */
+        if (pdTRUE != xTimerStop(wifiSendTimerHandle, UINT8_C(0)))
+        {
+            /* Assertion Reason: Failed to start software timer. Check command queue size of software timer service. */
+            assert(false);
+        }
+        printf("XDK Device disconnected form WIFI n/w \r\n");
+        break;
+    case WLAN_CONNECTION_ERROR:
+        printf("XDK Device WIFI Connection error \r\n");
+        break;
+    case WLAN_CONNECTION_PWD_ERROR:
+        printf("XDK Device WIFI connection error due to wrong password \r\n");
+        break;
+    case WLAN_DISCONNECT_ERROR:
+        printf("XDK Device WIFI Disconnect error \r\n");
+        break;
+    default:
+        printf("XDK Device unknown WIFI event \r\n");
+        break;
+    }
+}
+
+Retcode_T wifiConnect(void)
+{
+    WlanConnect_SSID_T connectSSID;
+    WlanConnect_PassPhrase_T connectPassPhrase;
+    Retcode_T ReturnValue = (Retcode_T) RETCODE_FAILURE;
+
+    ReturnValue = WlanConnect_Init();
+
+    if (RETCODE_OK != ReturnValue)
+    {
+        printf("Error occurred initializing WLAN \r\n ");
+        return ReturnValue;
+    }
+    printf("Connecting to %s \r\n ", WLAN_CONNECT_WPA_SSID);
+
+    connectSSID = (WlanConnect_SSID_T) WLAN_CONNECT_WPA_SSID;
+    connectPassPhrase = (WlanConnect_PassPhrase_T) WLAN_CONNECT_WPA_PASS;
+    ReturnValue = NetworkConfig_SetIpDhcp(NULL);
+    if (RETCODE_OK != ReturnValue)
+    {
+        printf("Error in setting IP to DHCP\n\r");
+        return ReturnValue;
+    }
+    ReturnValue = WlanConnect_WPA(connectSSID, connectPassPhrase, WlanEventCallback);
+    if (RETCODE_OK != ReturnValue)
+    {
+        printf("Error occurred while connecting Wlan %s \r\n ", WLAN_CONNECT_WPA_SSID);
+    }
+    return ReturnValue;
+}
+
+static void scanAdcInit(void)
+{
+    /* Initialize Configuration ADC Structures */
+    ADC_Init_TypeDef     adc0_init_conf     = ADC_INIT_DEFAULT;
+    ADC_InitScan_TypeDef adc0_scaninit_conf = ADC_INITSCAN_DEFAULT;
+
+    /* Enable Clocks for the ADC */
+    CMU_ClockEnable(cmuClock_HFPER, true);
+    CMU_ClockEnable(cmuClock_ADC0, true);
+
+    /* Configure the ADC Initialization Structure */
+    adc0_init_conf.timebase = ADC_TimebaseCalc(TIMEBASE);
+    adc0_init_conf.prescale = ADC_PrescaleCalc(ADCFREQUENCY, TIMEBASE);
+    ADC_Init(ADC0, &adc0_init_conf);
+
+    /* Configure the ADC Scan Structure */
+    adc0_scaninit_conf.reference = adcRef2V5;
+    adc0_scaninit_conf.input     = ADC_SCANCTRL_INPUTMASK_CH5 |
+                                   ADC_SCANCTRL_INPUTMASK_CH6;
+
+    ADC_InitScan(ADC0, &adc0_scaninit_conf);
+
+    /* Setup and Start the timer to scan the ADC Channels */
+    scanAdcTimerHandle = xTimerCreate(
+        (const char *) "ADC read", ONESECONDDELAY/10,
+        TIMER_AUTORELOAD_ON, NULL, scanAdc);
+
+    xTimerStart(scanAdcTimerHandle, TIMERBLOCKTIME);
+}
+
 
 void testUART(){
 	int status;
@@ -204,17 +587,14 @@ void appInitSystem(void * CmdProcessorHandle, uint32_t param2)
     BCDS_UNUSED(param2);
     Retcode_T returnVal = RETCODE_OK;
 
+    initUDP();
     initUART();
+    scanAdcInit();
+
+    createNewGPIOTask();
     createNewUARTTask();
-//    returnVal = MCU_UART_Initialize(processdata1);
-//    if (returnVal == RETCODE_OK)
-//    {
-//        returnVal = HAL_UART_Enable_Rx();
-//    }
-//    if (returnVal != RETCODE_OK)
-//    {
-//        printf("Enabling the UART for receiving failed \r\n");
-//    }
+
+
 }
 
 
