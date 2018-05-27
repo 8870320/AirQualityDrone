@@ -43,6 +43,7 @@
 #include "BCDS_WlanConnect.h"
 #include "FreeRTOS.h"
 #include "timers.h"
+#include "BCDS_MCU_UART.h"
 /* header definition ******************************************************** */
 #ifndef XDK110_XDKAPPLICATIONTEMPLATE_H_
 #define XDK110_XDKAPPLICATIONTEMPLATE_H_
@@ -70,16 +71,9 @@
 #define SERVER_PORT        UINT16_C(9876)           /**< Port number on which server will listen */
 /* local function prototype declarations */
 
-/* local module global variable declarations */
 
-/* local inline function definitions */
-/**
- * @brief This is a template function where the user can write his custom application.
- *
- * @param[in] CmdProcessorHandle Handle of the main commandprocessor
- *
- * @param[in] param2  Currently not used will be used in future
- */
+
+/* functions */
 void appInitSystem(void * CmdProcessorHandle, uint32_t param2);
 void initUART();
 static void initUDP(void);
@@ -87,13 +81,19 @@ static void PrintDeviceIP(void);
 static void wifiUdpSend(void * param1, uint32_t port);
 static void EnqueueDatatoWifi(void *pvParameters);
 static void WlanEventCallback(WlanConnect_Status_T Event);
+MCU_UART_Callback_T uartCallback(UART_T uart, struct MCU_UART_Event_S event);
 static Retcode_T wifiConnect(void);
-void testUART();
-void createNewUARTTask(void);
+void startUart();
+
+
+//----------------------------- Readings -------------------------------------------
+
+static void readUART(xTimerHandle pxTimer);
 static void scanAdcInit(void);
-void extensionLedTask(void);
+static void gpioTask(xTimerHandle pxTimer2);
 void createNewGPIOTask(void);
 static void scanAdc(xTimerHandle pxTimer);
+void gpioInit();
 #endif /* XDK110_XDKAPPLICATIONTEMPLATE_H_ */
 
 /** ************************************************************************* */

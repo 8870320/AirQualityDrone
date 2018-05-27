@@ -5,6 +5,9 @@ C:/Users/Seb/XDK-Workspace/AirQualityDrone_XDK_Github/testUart/debug/objects/tes
  ../Platform/Wlan/include/BCDS_WlanConnect.h \
  ../Platform/Essentials/include/BCDS_Retcode.h \
  ../Platform/Essentials/include/BCDS_Basics.h \
+ ../Platform/Essentials/include/mcu/BCDS_MCU_UART.h \
+ ../Platform/Essentials/include/BCDS_HAL.h \
+ ../Common/config/Essentials/BCDS_HALConfig.h \
  ../Common/include/XdkSensorHandle.h \
  ../Platform/Sensors/include/BCDS_Accelerometer.h \
  ../Platform/Sensors/include/BCDS_Gyroscope.h \
@@ -23,9 +26,6 @@ C:/Users/Seb/XDK-Workspace/AirQualityDrone_XDK_Github/testUart/debug/objects/tes
  ../Platform/SensorToolbox/include/BCDS_FingerPrint.h \
  ../Platform/SensorToolbox/include/BCDS_LinearAcceleration.h \
  ../Platform/SensorToolbox/include/BCDS_Gestures.h \
- ../Platform/Essentials/include/BCDS_HAL.h \
- ../Common/config/Essentials/BCDS_HALConfig.h \
- ../Platform/Essentials/include/mcu/BCDS_MCU_UART.h \
  ../Platform/BSP/include/BSP_ExtensionPort.h \
  ../Platform/Utils/include/BCDS_CmdProcessor.h \
  ../Platform/Utils/include/BCDS_Utils.h \
@@ -46,6 +46,12 @@ C:/Users/Seb/XDK-Workspace/AirQualityDrone_XDK_Github/testUart/source/testUart.h
 ../Platform/Essentials/include/BCDS_Retcode.h:
 
 ../Platform/Essentials/include/BCDS_Basics.h:
+
+../Platform/Essentials/include/mcu/BCDS_MCU_UART.h:
+
+../Platform/Essentials/include/BCDS_HAL.h:
+
+../Common/config/Essentials/BCDS_HALConfig.h:
 
 ../Common/include/XdkSensorHandle.h:
 
@@ -82,12 +88,6 @@ C:/Users/Seb/XDK-Workspace/AirQualityDrone_XDK_Github/testUart/source/testUart.h
 ../Platform/SensorToolbox/include/BCDS_LinearAcceleration.h:
 
 ../Platform/SensorToolbox/include/BCDS_Gestures.h:
-
-../Platform/Essentials/include/BCDS_HAL.h:
-
-../Common/config/Essentials/BCDS_HALConfig.h:
-
-../Platform/Essentials/include/mcu/BCDS_MCU_UART.h:
 
 ../Platform/BSP/include/BSP_ExtensionPort.h:
 
