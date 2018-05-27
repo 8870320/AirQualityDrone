@@ -88,7 +88,7 @@ void startUart();
 
 //----------------------------- Readings -------------------------------------------
 
-static void readUART(xTimerHandle pxTimer);
+static void uartTask();
 static void scanAdcInit(void);
 static void gpioTask(xTimerHandle pxTimer2);
 void createNewGPIOTask(void);

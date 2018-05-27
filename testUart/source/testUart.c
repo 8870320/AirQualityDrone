@@ -245,12 +245,17 @@ void gpioInit(){
 	    xTimerStart(gpioTimerHandle, TIMERBLOCKTIME);
 }
 
-void startUart(){
-	uartHandle = xTimerCreate(
-		        (const char *) "ADC read", ONESECONDDELAY,
-		        TIMER_AUTORELOAD_ON, NULL, readUART);
-
-	xTimerStart(uartHandle, TIMERBLOCKTIME);
+void createNewUARTTask(void)
+{
+  xTaskHandle taskHandle = NULL;
+  xTaskCreate(
+    uartTask,                 // function that implements the task
+    (const char * const) "My Task", // a name for the task
+    configMINIMAL_STACK_SIZE,       // depth of the task stack
+    NULL,                           // parameters passed to the function
+    tskIDLE_PRIORITY,               // task priority
+    taskHandle                      // pointer to a task handle for late reference
+  );
 }
 
 //---------------------------------------------- Readings ---------------------------------------------
@@ -344,7 +349,7 @@ static void scanAdc(xTimerHandle pxTimer)
         		case 1: payload.o3sensitive=(float)_adc0ChData  /4095 * 2;
         			    printf("%f 1.\n\r", payload.o3sensitive);
         				break;
-        		case 2:	payload.o3lessSensitive=(float)(1-_adc0ChData  /4095 )* 1000;
+        		case 2:	payload.o3lessSensitive=(float)(1.0-((float)_adc0ChData  /4095 ))* 1000;
 			    		printf("%f 2.\n\r", payload.o3lessSensitive);
         				break;
         		case 3:	payload.co2=(float)_adc0ChData  /4095 * 10000;
@@ -415,20 +420,21 @@ static void wifiUdpSend(void * param1, uint32_t port)
     return;
 }
 
-static void readUART(xTimerHandle pxTimer){
+static void uartTask(){
 	int status;
 	uint8_t buffer [10] ;
 	buffer[0]=0;
 	buffer[1]=1;
 	buffer[2]=2;
 	uint32_t bufLen = sizeof(buffer);
-
+	for (;;)
+	{
 		for(int i=0;i<10;i++){
 			buffer[i]=null;
 		}
 		//printf("Startup task...\r\n");
 		//printf("Startup task... done\r\n");
-
+		vTaskDelay (900);
 		status = MCU_UART_Receive(uartHandle,  buffer, bufLen);
 		if(status!=RETCODE_OK){
 			printf("Error at MCU_UART_Receive: %d\r\n",status);
@@ -441,10 +447,10 @@ static void readUART(xTimerHandle pxTimer){
 					printf("Bit %d aus Buffer: %d\r\n",i,buffer[i]);
 				}
 			}
-			payload.pm25=(float)buffer[3]*256+buffer[2];
-			payload.pm10=(float)buffer[5]*256+buffer[4];
+			payload.pm25=((float)buffer[3]*256+buffer[2])/10;
+			payload.pm10=((float)buffer[5]*256+buffer[4])/10;
 		}
-
+	}
 }
 
 
@@ -596,7 +602,7 @@ void appInitSystem(void * CmdProcessorHandle, uint32_t param2)
     scanAdcInit();
     //UARTInit);
     initUDP();
-    startUart();
+    createNewUARTTask();
 //    createNewUARTTask();
 
 
