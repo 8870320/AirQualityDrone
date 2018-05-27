@@ -82,6 +82,8 @@
 #include "BCDS_MCU_GPIO_Handle.h"
 #include "BSP_BoardShared.h"
 
+#include "XdkSensorHandle.h"
+
 #define TIMER_AUTORELOAD_ON pdTRUE
 
 #define ONESECONDDELAY      UINT32_C(1000)       /* one second is represented by this macro */
@@ -97,6 +99,7 @@ UART_T uartHandle;
 xTimerHandle wifiSendTimerHandle = NULL;
 xTimerHandle scanAdcTimerHandle=NULL;
 xTimerHandle gpioTimerHandle=NULL;
+xTimerHandle environmentalHandle = NULL;
 
 _i16 socketHandle=NULL;
 Ip_Address_T destAddr = SERVER_IP;
@@ -105,9 +108,9 @@ int sensorNo=0;
 
 struct messagePayload
 {
-  float temperature;
-  float pressure;
-  float humidity;
+  float temperature;		//degrees
+  float pressure;			//Pa
+  float humidity;			//% relativeHum
   float pm25; 				//in ug/m3
   float pm10; 				//in ug/m3
   float co;				//in ppm
@@ -258,6 +261,34 @@ void createNewUARTTask(void)
   );
 }
 
+static void initEnvironmental(void)
+{
+    Retcode_T returnValue = RETCODE_FAILURE;
+    Retcode_T returnOverSamplingValue = RETCODE_FAILURE;
+    Retcode_T returnFilterValue = RETCODE_FAILURE;
+
+    /* initialize environmental sensor */
+
+    returnValue = Environmental_init(xdkEnvironmental_BME280_Handle);
+    if ( RETCODE_OK != returnValue) {
+        printf("BME280 Environmental Sensor initialization failed\n\r");
+    }
+
+    returnOverSamplingValue = Environmental_setOverSamplingPressure(xdkEnvironmental_BME280_Handle,ENVIRONMENTAL_BME280_OVERSAMP_2X);
+    if (RETCODE_OK != returnOverSamplingValue) {
+        printf("Configuring pressure oversampling failed \n\r");
+    }
+
+    returnFilterValue = Environmental_setFilterCoefficient(xdkEnvironmental_BME280_Handle,ENVIRONMENTAL_BME280_FILTER_COEFF_2);
+    if (RETCODE_OK != returnFilterValue) {
+        printf("Configuring pressure filter coefficient failed \n\r");
+    }
+
+    environmentalHandle = xTimerCreate((const char *) "readEnvironmental", ONESECONDDELAY,TIMER_AUTORELOAD_ON, NULL, readEnvironmental);
+
+        xTimerStart(environmentalHandle,TIMERBLOCKTIME);
+}
+
 //---------------------------------------------- Readings ---------------------------------------------
 
 static void gpioTask(xTimerHandle pxTimer2)
@@ -349,7 +380,7 @@ static void scanAdc(xTimerHandle pxTimer)
         		case 1: payload.o3sensitive=(float)_adc0ChData  /4095 * 2;
         			    printf("%f 1.\n\r", payload.o3sensitive);
         				break;
-        		case 2:	payload.o3lessSensitive=(float)(1.0-((float)_adc0ChData  /4095 ))* 1000;
+        		case 2:	payload.o3lessSensitive=(float)(1.0-((float)_adc0ChData  /4095 ));
 			    		printf("%f 2.\n\r", payload.o3lessSensitive);
         				break;
         		case 3:	payload.co2=(float)_adc0ChData  /4095 * 10000;
@@ -453,7 +484,26 @@ static void uartTask(){
 	}
 }
 
+static void readEnvironmental(xTimerHandle xTimer)
+{
+    (void) xTimer;
 
+    Retcode_T returnValue = RETCODE_FAILURE;
+
+    /* read and print BME280 environmental sensor data */
+
+    Environmental_Data_T bme280 = { INT32_C(0), UINT32_C(0), UINT32_C(0) };
+
+    returnValue = Environmental_readData(xdkEnvironmental_BME280_Handle, &bme280);
+
+    if ( RETCODE_OK == returnValue) {
+        printf("BME280 Environmental Data : p =%ld Pa T =%ld mDeg h =%ld %%rh\n\r",
+        (long int) bme280.pressure, (long int) bme280.temperature, (long int) bme280.humidity);
+        payload.temperature=(float)bme280.temperature / 1000;
+        payload.pressure=(float)bme280.pressure;
+        payload.humidity=(float)bme280.humidity / 100;
+    }
+}
 
 
 
@@ -597,7 +647,7 @@ void appInitSystem(void * CmdProcessorHandle, uint32_t param2)
     initUART();
 
        //-------- Init Tasks -------------
-
+    initEnvironmental();
     gpioInit();
     scanAdcInit();
     //UARTInit);

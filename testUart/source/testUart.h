@@ -84,7 +84,7 @@ static void WlanEventCallback(WlanConnect_Status_T Event);
 MCU_UART_Callback_T uartCallback(UART_T uart, struct MCU_UART_Event_S event);
 static Retcode_T wifiConnect(void);
 void startUart();
-
+static void initEnvironmental(void);
 
 //----------------------------- Readings -------------------------------------------
 
@@ -94,6 +94,7 @@ static void gpioTask(xTimerHandle pxTimer2);
 void createNewGPIOTask(void);
 static void scanAdc(xTimerHandle pxTimer);
 void gpioInit();
+static void readEnvironmental(xTimerHandle xTimer);
 #endif /* XDK110_XDKAPPLICATIONTEMPLATE_H_ */
 
 /** ************************************************************************* */
