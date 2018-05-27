@@ -1,4 +1,4 @@
-C:/Users/Seb/XDK-Workspace/testUart/debug/objects/source/SystemStartup.o: \
+C:/Users/Seb/XDK-Workspace/AirQualityDrone_XDK_Github/testUart/debug/objects/source/SystemStartup.o: \
  source/SystemStartup.c ../Common/include/XdkCommonInfo.h \
  ../Platform/Essentials/include/BCDS_Basics.h \
  ../Common/include/XdkSystemStartup.h \

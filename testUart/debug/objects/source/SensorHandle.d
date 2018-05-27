@@ -1,4 +1,4 @@
-C:/Users/Seb/XDK-Workspace/testUart/debug/objects/source/SensorHandle.o: \
+C:/Users/Seb/XDK-Workspace/AirQualityDrone_XDK_Github/testUart/debug/objects/source/SensorHandle.o: \
  source/SensorHandle.c ../Common/include/XdkCommonInfo.h \
  ../Common/include/XdkSensorHandle.h \
  ../Platform/Sensors/include/BCDS_Accelerometer.h \

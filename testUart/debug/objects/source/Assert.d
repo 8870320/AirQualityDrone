@@ -1,4 +1,4 @@
-C:/Users/Seb/XDK-Workspace/testUart/debug/objects/source/Assert.o: \
+C:/Users/Seb/XDK-Workspace/AirQualityDrone_XDK_Github/testUart/debug/objects/source/Assert.o: \
  source/Assert.c ../Platform/Essentials/include/BCDS_Essentials.h \
  ../Platform/Essentials/include/BCDS_HAL.h \
  ../Platform/Essentials/include/BCDS_Retcode.h \

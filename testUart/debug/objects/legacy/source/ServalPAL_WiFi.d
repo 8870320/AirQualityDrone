@@ -1,4 +1,4 @@
-C:/Users/Seb/XDK-Workspace/testUart/debug/objects/legacy/source/ServalPAL_WiFi.o: \
+C:/Users/Seb/XDK-Workspace/AirQualityDrone_XDK_Github/testUart/debug/objects/legacy/source/ServalPAL_WiFi.o: \
  legacy/source/ServalPAL_WiFi.c ../Common/include/XdkCommonInfo.h \
  ../Common/legacy/include/ServalPAL_WiFi/PAL_initialize_ih.h \
  ../Platform/ServalPAL/include/PIp.h \

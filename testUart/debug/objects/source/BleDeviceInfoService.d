@@ -1,4 +1,4 @@
-C:/Users/Seb/XDK-Workspace/testUart/debug/objects/source/BleDeviceInfoService.o: \
+C:/Users/Seb/XDK-Workspace/AirQualityDrone_XDK_Github/testUart/debug/objects/source/BleDeviceInfoService.o: \
  source/BleDeviceInfoService.c \
  ../Platform/Essentials/include/BCDS_Basics.h \
  ../Platform/Essentials/include/BCDS_Retcode.h \

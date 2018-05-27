@@ -1,4 +1,4 @@
-C:/Users/Seb/XDK-Workspace/testUart/debug/objects/source/UsbResetUtility.o: \
+C:/Users/Seb/XDK-Workspace/AirQualityDrone_XDK_Github/testUart/debug/objects/source/UsbResetUtility.o: \
  source/UsbResetUtility.c ../Common/include/XdkCommonInfo.h \
  ../Common/include/XdkUsbResetUtility.h \
  ../Platform/Essentials/include/BCDS_Retcode.h \

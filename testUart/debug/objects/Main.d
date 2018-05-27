@@ -1,5 +1,5 @@
-C:/Users/Seb/XDK-Workspace/testUart/debug/objects/Main.o: \
- C:/Users/Seb/XDK-Workspace/testUart/source/Main.c \
+C:/Users/Seb/XDK-Workspace/AirQualityDrone_XDK_Github/testUart/debug/objects/Main.o: \
+ C:/Users/Seb/XDK-Workspace/AirQualityDrone_XDK_Github/testUart/source/Main.c \
  ../Platform/Essentials/include/BCDS_Basics.h \
  ../Common/include/XdkSystemStartup.h \
  ../Platform/Essentials/include/BCDS_Retcode.h \
@@ -9,7 +9,8 @@ C:/Users/Seb/XDK-Workspace/testUart/debug/objects/Main.o: \
  ../Platform/Utils/include/BCDS_CmdProcessor.h \
  ../Platform/Utils/include/BCDS_Utils.h \
  ../Common/config/Utils/BCDS_UtilsConfig.h \
- C:/Users/Seb/XDK-Workspace/testUart/source/testUart.h
+ C:/Users/Seb/XDK-Workspace/AirQualityDrone_XDK_Github/testUart/source/testUart.h \
+ ../Platform/Wlan/include/BCDS_WlanConnect.h
 
 ../Platform/Essentials/include/BCDS_Basics.h:
 
@@ -29,4 +30,6 @@ C:/Users/Seb/XDK-Workspace/testUart/debug/objects/Main.o: \
 
 ../Common/config/Utils/BCDS_UtilsConfig.h:
 
-C:/Users/Seb/XDK-Workspace/testUart/source/testUart.h:
+C:/Users/Seb/XDK-Workspace/AirQualityDrone_XDK_Github/testUart/source/testUart.h:
+
+../Platform/Wlan/include/BCDS_WlanConnect.h:
