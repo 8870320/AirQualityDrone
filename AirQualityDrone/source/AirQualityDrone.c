@@ -51,7 +51,7 @@
 /* system header files */
 #include <stdio.h>
 
-#include "testUart.h"
+#include "AirQualityDrone.h"
 #include "XdkSensorHandle.h"
 /* additional interface header files */
 #include "BCDS_HAL.h"
@@ -104,6 +104,11 @@ xTimerHandle environmentalHandle = NULL;
 _i16 socketHandle=NULL;
 Ip_Address_T destAddr = SERVER_IP;
 SlSockAddrIn_t addr;
+
+MCU_GPIO_Handle_T GPIOA;
+	MCU_GPIO_Handle_T GPIOB;
+	MCU_GPIO_Handle_T GPIOC;
+
 int sensorNo=0;
 
 struct messagePayload
@@ -241,6 +246,27 @@ static void scanAdcInit(void)
 }
 
 void gpioInit(){
+	 /* initialize local variables */
+	    GPIOA.Port = gpioPortA;
+	    GPIOA.Pin = 1;
+	    GPIOA.Mode = gpioModePushPull;
+	    GPIOA.InitialState = MCU_GPIO_PIN_STATE_LOW;
+
+	    GPIOB.Port = gpioPortE;
+		GPIOB.Pin = 2;
+		GPIOB.Mode = gpioModePushPull;
+		GPIOB.InitialState = MCU_GPIO_PIN_STATE_LOW;
+
+		GPIOC.Port = gpioPortC;
+		GPIOC.Pin = 8;
+		GPIOC.Mode = gpioModePushPull;
+		GPIOC.InitialState = MCU_GPIO_PIN_STATE_LOW;
+
+	    /* Initialization activities for PTD driver */
+	    MCU_GPIO_Initialize(&GPIOA);
+	    MCU_GPIO_Initialize(&GPIOB);
+	    MCU_GPIO_Initialize(&GPIOC);
+
 	gpioTimerHandle = xTimerCreate(
 	        (const char *) "ADC read", ONESECONDDELAY/10,
 	        TIMER_AUTORELOAD_ON, NULL, gpioTask);
@@ -293,31 +319,12 @@ static void initEnvironmental(void)
 
 static void gpioTask(xTimerHandle pxTimer2)
 {
-	MCU_GPIO_Handle_T GPIOA;
-	MCU_GPIO_Handle_T GPIOB;
-	MCU_GPIO_Handle_T GPIOC;
-    /* initialize local variables */
-    GPIOA.Port = gpioPortA;
-    GPIOA.Pin = 1;
-    GPIOA.Mode = gpioModePushPull;
-    GPIOA.InitialState = MCU_GPIO_PIN_STATE_LOW;
+	int retcode;
 
-    GPIOB.Port = gpioPortE;
-	GPIOB.Pin = 2;
-	GPIOB.Mode = gpioModePushPull;
-	GPIOB.InitialState = MCU_GPIO_PIN_STATE_LOW;
-
-	GPIOC.Port = gpioPortC;
-	GPIOC.Pin = 8;
-	GPIOC.Mode = gpioModePushPull;
-	GPIOC.InitialState = MCU_GPIO_PIN_STATE_LOW;
-
-    /* Initialization activities for PTD driver */
-    MCU_GPIO_Initialize(&GPIOA);
-    MCU_GPIO_Initialize(&GPIOB);
-    MCU_GPIO_Initialize(&GPIOC);
-    /* blinking functionality */
-    	int retcode;
+	sensorNo+=1;
+		if(sensorNo>=10){
+			sensorNo=0;
+		}
 
 	switch(sensorNo){
 		case 0: retcode = MCU_GPIO_WritePin(&GPIOA,MCU_GPIO_PIN_STATE_LOW);
@@ -351,10 +358,7 @@ static void gpioTask(xTimerHandle pxTimer2)
 	if(retcode!= RETCODE_OK){
 		printf("Write low failed!\n\r\n\r");
 	}
-	sensorNo+=1;
-	if(sensorNo>=10){
-		sensorNo=0;
-	}
+
 }
 
 static void scanAdc(xTimerHandle pxTimer)
@@ -374,16 +378,16 @@ static void scanAdc(xTimerHandle pxTimer)
         /* Read the Scanned data */
         _adc0ChData = 0xFFF & ADC_DataScanGet(ADC0);
         switch(sensorNo){
-        		case 0: payload.co=(float)_adc0ChData  /4095 * 2000;
+        		case 0: payload.co=(float)_adc0ChData  /4095;
         				printf("%f 0.\n\r", payload.co);
         				break;
-        		case 1: payload.o3sensitive=(float)_adc0ChData  /4095 * 2;
+        		case 1: payload.o3sensitive=(float)_adc0ChData  /4095;
         			    printf("%f 1.\n\r", payload.o3sensitive);
         				break;
         		case 2:	payload.o3lessSensitive=(float)(1.0-((float)_adc0ChData  /4095 ));
 			    		printf("%f 2.\n\r", payload.o3lessSensitive);
         				break;
-        		case 3:	payload.co2=(float)_adc0ChData  /4095 * 10000;
+        		case 3:	payload.co2=(float)_adc0ChData  /4095 ;
 	    				printf("%f 3.\n\r", payload.co2);
         				break;
         		case 4:	payload.hazardousGas=(float)_adc0ChData  /4095 ;
@@ -405,8 +409,6 @@ static void wifiUdpSend(void * param1, uint32_t port)
     int16_t SockID = (int16_t) 6000;
     int16_t Status = (int16_t) ZERO;
 
-    /* copies the dummy data to send array , the first array element is the running counter to track the number of packets send so far*/
-
     Addr.sin_family = SL_AF_INET;
     Addr.sin_port = sl_Htons((uint16_t) SERVER_PORT);
     Addr.sin_addr.s_addr = sl_Htonl(SERVER_IP);
@@ -426,9 +428,6 @@ static void wifiUdpSend(void * param1, uint32_t port)
 			payload.pm25,payload.pm10,payload.co,payload.co2,payload.o3sensitive,payload.o3lessSensitive,payload.hazardousGas);
 
 	Status = sl_SendTo(SockID, (const void *) outBuf, strlen(outBuf), (uint32_t) ZERO, (SlSockAddr_t *) &Addr, AddrSize);/**<The return value is a number of characters sent;negative if not successful*/
-
-//	Status = sl_SendTo(SockID, bsdBuffer_mau, BUFFER_SIZE * sizeof(uint16_t), (uint32_t) ZERO, (SlSockAddr_t *) &Addr, AddrSize);/**<The return value is a number of characters sent;negative if not successful*/
-	/*Check if 0 transmitted bytes sent or error condition*/
     if (Status <= (int16_t) ZERO)
     {
         Status = sl_Close(SockID);
@@ -454,18 +453,13 @@ static void wifiUdpSend(void * param1, uint32_t port)
 static void uartTask(){
 	int status;
 	uint8_t buffer [10] ;
-	buffer[0]=0;
-	buffer[1]=1;
-	buffer[2]=2;
 	uint32_t bufLen = sizeof(buffer);
 	for (;;)
 	{
 		for(int i=0;i<10;i++){
 			buffer[i]=null;
 		}
-		//printf("Startup task...\r\n");
-		//printf("Startup task... done\r\n");
-		vTaskDelay (900);
+		vTaskDelay (1000);
 		status = MCU_UART_Receive(uartHandle,  buffer, bufLen);
 		if(status!=RETCODE_OK){
 			printf("Error at MCU_UART_Receive: %d\r\n",status);
@@ -650,10 +644,8 @@ void appInitSystem(void * CmdProcessorHandle, uint32_t param2)
     initEnvironmental();
     gpioInit();
     scanAdcInit();
-    //UARTInit);
     initUDP();
     createNewUARTTask();
-//    createNewUARTTask();
 
 
 }
